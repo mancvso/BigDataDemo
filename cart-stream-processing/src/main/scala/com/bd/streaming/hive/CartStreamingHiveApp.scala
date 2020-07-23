@@ -14,7 +14,11 @@ import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 import scala.collection.mutable.ArrayBuffer
 
+import org.slf4j.LoggerFactory
+
 object CartStreamingHiveApp {
+  private val logger = LoggerFactory.getLogger("CartStreamingHiveApp")
+
   def jsonMapper(): ObjectMapper = {
     val mapper = new ObjectMapper() with ScalaObjectMapper
     mapper.registerModules(DefaultScalaModule, new JavaTimeModule())
@@ -42,7 +46,7 @@ object CartStreamingHiveApp {
 
     val sqlContext = spark.sqlContext
     val ssc = new StreamingContext(spark.sparkContext, Seconds(15))
-    val topics = Array("cart-topic")
+    val topics = Array("cart-topic-topic")
 
     val stream = KafkaUtils.createDirectStream[String, String](
       ssc,
@@ -60,6 +64,8 @@ object CartStreamingHiveApp {
           result += ProductSalesRecord(order.productId, order.productCategory,
             order.amount * order.price, cart.issuedTimestamp)
         })
+        val n = result.size
+        logger.info(s"===== Got $n results")
         result
       }).foreachRDD(rdd => {
       import sqlContext.implicits._

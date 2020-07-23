@@ -7,6 +7,7 @@ import java.util.concurrent.{ExecutionException, Future}
 import com.typesafe.config.Config
 import org.apache.kafka.clients.admin.{AdminClient, AdminClientConfig, NewTopic}
 import org.apache.kafka.clients.producer._
+import org.apache.kafka.common.errors.TopicExistsException
 import org.slf4j.LoggerFactory
 
 class Streamer(config: Config) {
@@ -36,7 +37,8 @@ class Streamer(config: Config) {
     val createTopicsResult = adminClient.createTopics(util.Arrays.asList(cTopic))
     try createTopicsResult.all.get
     catch {
-      case e@(_: InterruptedException | _: ExecutionException) =>
+      case e@(_: TopicExistsException) => logger.info("Topic already exists")
+      case e =>
         logger.error("Create topic error {}", e.getMessage)
     }
   }
@@ -55,6 +57,7 @@ class Streamer(config: Config) {
     val record = new ProducerRecord[String, String](topic, id, data)
     producer.send(record, new Callback {
       def onCompletion(var1: RecordMetadata, var2: Exception) = {
+        logger.info(s"Data sent to $topic")
         sendingProcesses -= 1
       }
     })

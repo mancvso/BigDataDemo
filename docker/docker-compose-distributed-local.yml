@@ -167,6 +167,41 @@ services:
       - "8888:8888"
     volumes:
       - $PWD/docker/jupyter/shared:/home/jovyan/work
+
+  hue:
+    image: gethue/hue:latest
+    container_name: hue
+    ports:
+      - "7777:7777"
+    volumes:
+      - $PWD/docker/hue/hue.ini:/usr/share/hue/desktop/conf/z-hue.ini
+    depends_on:
+      - "huedatabase"
+      - "hive-server"
+      - "spark-master"
+      - "kafka"
+
+  huedatabase:
+    image: mysql:5.7
+    container_name: huedatabase
+    healthcheck:
+      test: mysqladmin -uroot -ppassword ping
+      interval: 2s
+      timeout: 2s
+      retries: 15
+    ports:
+      - "3306:3306"
+    # command: --init-file /data/application/init.sql
+    # volumes:
+    #   - $PWD/docker/mysql/init.sql:/data/application/init.sql
+    environment:
+      MYSQL_ROOT_USER: root
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: hue
+      MYSQL_USER: hue
+      MYSQL_PASSWORD: secret
+
+  
 #volumes:
 #  hadoop_namenode:
 #  hadoop_datanode:
